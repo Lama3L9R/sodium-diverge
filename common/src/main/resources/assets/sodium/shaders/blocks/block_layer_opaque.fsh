@@ -1,17 +1,17 @@
-#version 330 core
+#version 450 core
 
-#moj_import <sodium:globals.glsl>
-#moj_import <sodium:fog.glsl>
-#moj_import <sodium:chunk_material.glsl>
+#include <sodium:globals.glsl>
+#include <sodium:fog.glsl>
+#include <sodium:chunk_material.glsl>
 
-in vec4 v_Color; // The interpolated vertex color
-in vec2 v_TexCoord; // The interpolated block texture coordinates
-in vec2 v_FragDistance; // The fragment's distance from the camera (cylindrical and spherical)
-in float fadeFactor;
+layout(location = 0) in vec4 v_Color; // The interpolated vertex color
+layout(location = 1) in vec2 v_TexCoord; // The interpolated block texture coordinates
+layout(location = 2) in vec2 v_FragDistance; // The fragment's distance from the camera (cylindrical and spherical)
+layout(location = 3) in float fadeFactor;
 
 uniform sampler2D u_BlockTex; // The block texture
 
-out vec4 fragColor; // The output fragment for the color framebuffer
+layout(location = 0) out vec4 fragColor; // The output fragment for the color framebuffer
 
 vec4 sampleNearest(sampler2D source, vec2 uv, vec2 pixelSize, vec2 du, vec2 dv, vec2 texelScreenSize) {
     // Convert our UV back up to texel coordinates and find out how far over we are from the center of each pixel

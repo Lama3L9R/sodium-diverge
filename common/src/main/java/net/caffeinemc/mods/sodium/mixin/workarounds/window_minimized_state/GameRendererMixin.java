@@ -3,14 +3,17 @@ package net.caffeinemc.mods.sodium.mixin.workarounds.window_minimized_state;
 import com.mojang.blaze3d.platform.Window;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.minecraft.client.renderer.GameRenderer;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/** As a workaround for the blitting crash on some Intel GPUs (see
+/**
+ * Migrated to SDL3 (from GLFW)
+ * <p>
+ * As a workaround for the blitting crash on some Intel GPUs (see
  * {@link Workarounds.Reference#INTEL_FRAMEBUFFER_BLIT_CRASH_WHEN_UNFOCUSED}), vanilla skips framebuffer blitting
  * when the window is minimized. However, the vanilla implementation of {@link Window#isMinimized()} relies on
  * {@link org.lwjgl.glfw.GLFWFramebufferSizeCallback}, which means it only has the information of when the last event
@@ -27,15 +30,15 @@ public class GameRendererMixin {
             Workarounds.isWorkaroundEnabled(Workarounds.Reference.INTEL_FRAMEBUFFER_BLIT_CRASH_WHEN_UNFOCUSED);
 
     @Redirect(method = "extractWindow",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;isMinimized()Z"))
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;isIconified()Z"))
     private boolean redirectWindowMinimized(Window window) {
         if (!this.sodium$redirectWindowMinimizedState) {
-            return window.isMinimized();
+            return window.isIconified();
         }
         try (var stack = MemoryStack.stackPush()) {
             var width = stack.callocInt(1);
             var height = stack.callocInt(1);
-            GLFW.glfwGetFramebufferSize(window.handle(), width, height);
+            SDLVideo.SDL_GetWindowSizeInPixels(window.handle(), width, height);
             return width.get(0) == 0 || height.get(0) == 0;
         }
     }

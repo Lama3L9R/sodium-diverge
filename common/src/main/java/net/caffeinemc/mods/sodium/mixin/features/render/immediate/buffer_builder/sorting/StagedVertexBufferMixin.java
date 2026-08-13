@@ -2,10 +2,9 @@ package net.caffeinemc.mods.sodium.mixin.features.render.immediate.buffer_builde
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.vertex.CompactVectorArray;
-import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.renderpearl.api.vertex.VertexFormatElement;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.minecraft.client.renderer.StagedVertexBuffer;
@@ -23,14 +22,14 @@ public class StagedVertexBufferMixin {
             method = "decodeSortingPoints",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/vertex/MeshData;decodeQuadCentroids(Ljava/nio/ByteBuffer;ILcom/mojang/blaze3d/vertex/VertexFormat;Lcom/mojang/blaze3d/vertex/CompactVectorArray;I)V"))
+                    target = "Lcom/mojang/blaze3d/vertex/MeshData;decodeQuadCentroids(Ljava/nio/ByteBuffer;ILcom/mojang/renderpearl/api/vertex/VertexFormat;Lcom/mojang/blaze3d/vertex/CompactVectorArray;I)V"))
     private static void sodium$selectClosestSortingPoints(ByteBuffer vertexBuffer,
                                                           int vertexCount,
                                                           VertexFormat format,
                                                           CompactVectorArray output,
                                                           int outputIndex,
                                                           Operation<Void> original,
-                                                          @Local StagedVertexBuffer.Draw draw) {
+                                                          StagedVertexBuffer.Draw draw) {
         if (SodiumClientMod.options().quality.useClosestPointEntitySort &&
                 ((DrawAccessor) draw).getQuadSorting() == VertexSorting.DISTANCE_TO_ORIGIN) {
             VertexFormatElement positionElement = format.getElement("Position");

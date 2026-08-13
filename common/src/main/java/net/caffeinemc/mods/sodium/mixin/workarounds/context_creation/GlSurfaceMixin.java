@@ -1,6 +1,6 @@
 package net.caffeinemc.mods.sodium.mixin.workarounds.context_creation;
 
-import com.mojang.blaze3d.opengl.GlSurface;
+import com.mojang.renderpearl.backend.opengl.GlSurface;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.ModuleScanner;
 import net.caffeinemc.mods.sodium.client.compatibility.checks.PostLaunchChecks;
@@ -8,8 +8,9 @@ import net.caffeinemc.mods.sodium.client.compatibility.environment.GlContextInfo
 import net.caffeinemc.mods.sodium.client.platform.NativeWindowHandle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Util;
-import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.opengl.WGL;
+import org.lwjgl.sdl.SDLProperties;
+import org.lwjgl.sdl.SDLVideo;
 import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,8 @@ public class GlSurfaceMixin {
         LOGGER.info(String.valueOf(Thread.currentThread()));
         NativeWindowHandle handle = () -> {
             var window = Minecraft.getInstance().getWindow();
-            return GLFWNativeWin32.glfwGetWin32Window(window.handle());
+            int props = SDLVideo.SDL_GetWindowProperties(window.handle());
+            return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, MemoryUtil.NULL);
         };
 
         if (RenderSystem.getDevice().getDeviceInfo().backendName().contains("OpenGL")) {
@@ -91,6 +93,9 @@ public class GlSurfaceMixin {
 
         // Likely, this indicates a module was injected into the current process. We should check that
         // nothing problematic was just installed.
-        ModuleScanner.checkModules(() -> GLFWNativeWin32.glfwGetWin32Window(Minecraft.getInstance().getWindow().handle()));
+        ModuleScanner.checkModules(() -> {
+            int props = SDLVideo.SDL_GetWindowProperties(Minecraft.getInstance().getWindow().handle());
+            return SDLProperties.SDL_GetPointerProperty(props, SDLVideo.SDL_PROP_WINDOW_WIN32_HWND_POINTER, MemoryUtil.NULL);
+        });
     }
 }

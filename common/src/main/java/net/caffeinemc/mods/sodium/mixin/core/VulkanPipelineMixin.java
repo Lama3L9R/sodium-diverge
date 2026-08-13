@@ -2,9 +2,9 @@ package net.caffeinemc.mods.sodium.mixin.core;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.vulkan.VulkanRenderPipeline;
+import com.mojang.renderpearl.backend.api.BackendRenderPipeline;
+import com.mojang.renderpearl.backend.vulkan.VulkanDevice;
+import com.mojang.renderpearl.backend.vulkan.VulkanRenderPipeline;
 import net.caffeinemc.mods.sodium.client.gpu.device.context.DrawContext;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK13;
@@ -19,12 +19,12 @@ import java.nio.LongBuffer;
 public class VulkanPipelineMixin {
     @WrapOperation(method = "compile", at = @At(value = "INVOKE", target = "Lorg/lwjgl/vulkan/VkPipelineLayoutCreateInfo;pSetLayouts(Ljava/nio/LongBuffer;)Lorg/lwjgl/vulkan/VkPipelineLayoutCreateInfo;"))
     private static VkPipelineLayoutCreateInfo sodium$fixPipelineLayout(VkPipelineLayoutCreateInfo instance,
-                                                                       LongBuffer value,
-                                                                       Operation<VkPipelineLayoutCreateInfo> original,
-                                                                       @Local RenderPipeline pipeline,
-                                                                       @Local MemoryStack stack) {
-        if (pipeline.getLocation().getNamespace().contains("sodium")) {
-            instance.pPushConstantRanges(VkPushConstantRange.calloc(1, stack)
+                                                                        LongBuffer value,
+                                                                        Operation<VkPipelineLayoutCreateInfo> original,
+                                                                        VulkanDevice device,
+                                                                        BackendRenderPipeline.CreateInfo createInfo) {
+        if (createInfo.name().startsWith("sodium:")) {
+            instance.pPushConstantRanges(VkPushConstantRange.calloc(1, MemoryStack.stackGet())
                     .offset(0)
                     .size(DrawContext.PUSH_CONSTANT_RANGE)
                     .stageFlags(VK13.VK_SHADER_STAGE_ALL));

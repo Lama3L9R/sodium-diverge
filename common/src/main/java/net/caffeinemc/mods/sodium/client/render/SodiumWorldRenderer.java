@@ -1,6 +1,8 @@
 package net.caffeinemc.mods.sodium.client.render;
 
-import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
@@ -286,21 +288,38 @@ public class SodiumWorldRenderer {
     /**
      * Performs a render pass for the given {@link RenderType} and draws all visible chunks for it.
      */
-    public void drawChunkLayer(ChunkSectionLayerGroup group, ChunkRenderMatrices matrices, double x, double y, double z, GpuSampler terrainSampler) {
+    public void drawChunkLayer(ChunkSectionLayerGroup group,
+                               RenderPass renderPass,
+                               GpuSampler terrainSampler,
+                               GpuTextureView atlas,
+                               boolean wireframe,
+                               ChunkRenderMatrices matrices,
+                               double x,
+                               double y,
+                               double z) {
         if (group == ChunkSectionLayerGroup.OPAQUE) {
-            this.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z, this.lastFogParameters, terrainSampler);
-            this.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, x, y, z, this.lastFogParameters, terrainSampler);
+            this.renderLayer(matrices, DefaultTerrainRenderPasses.SOLID, x, y, z, this.lastFogParameters, renderPass, terrainSampler, atlas);
+            this.renderLayer(matrices, DefaultTerrainRenderPasses.CUTOUT, x, y, z, this.lastFogParameters, renderPass, terrainSampler, atlas);
         } else if (group == ChunkSectionLayerGroup.TRANSLUCENT) {
-            this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, x, y, z, this.lastFogParameters, terrainSampler);
+            this.renderLayer(matrices, DefaultTerrainRenderPasses.TRANSLUCENT, x, y, z, this.lastFogParameters, renderPass, terrainSampler, atlas);
         }
     }
 
-    public void renderLayer(ChunkRenderMatrices matrices, TerrainRenderPass pass, double x, double y, double z, FogParameters fogParameters, GpuSampler terrainSampler) {
+    public void renderLayer(ChunkRenderMatrices matrices,
+                            TerrainRenderPass pass,
+                            double x,
+                            double y,
+                            double z,
+                            FogParameters fogParameters,
+                            RenderPass renderPass,
+                            GpuSampler terrainSampler,
+                            GpuTextureView atlas) {
         this.uniformBufferManager.update(matrices, fogParameters);
 
         this.renderSectionManager.getChunkRenderer().render(matrices, this.renderSectionManager.getRenderLists(), pass,
                 new CameraTransform(x, y, z), fogParameters, this.useTranslucencySorting,
-                terrainSampler, this.uniformBufferManager.getUniformBuffer(), this.uniformBufferManager.getSectionTimeInfo());
+                renderPass, terrainSampler, atlas,
+                this.uniformBufferManager.getUniformBuffer(), this.uniformBufferManager.getSectionTimeInfo());
     }
 
     public void reload() {

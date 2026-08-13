@@ -1,12 +1,13 @@
 package net.caffeinemc.mods.sodium.client.render.chunk;
 
-import com.mojang.blaze3d.GpuFormat;
-import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.pipeline.*;
 import com.mojang.blaze3d.pipeline.*;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.textures.GpuSampler;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.pipeline.UniformType;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.caffeinemc.mods.sodium.client.gpu.device.context.DrawContext;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.chunk.vertex.format.ChunkVertexType;
 import net.caffeinemc.mods.sodium.client.util.FogParameters;
@@ -20,8 +21,8 @@ import java.util.Optional;
 public abstract class ShaderChunkRenderer implements ChunkRenderer {
     private static final Map<TerrainRenderPass, RenderPipeline> programs = new Object2ObjectOpenHashMap<>();
     public static final BindGroupLayout BIND_GROUP = BindGroupLayout.builder()
-            .withSampler("u_LightTex")
-            .withSampler("u_BlockTex")
+            .withUniform("u_LightTex", UniformType.COMBINED_IMAGE_SAMPLER)
+            .withUniform("u_BlockTex", UniformType.COMBINED_IMAGE_SAMPLER)
             .withUniform("u_Globals", UniformType.UNIFORM_BUFFER)
             .withUniform("u_SectionTimeInfo", UniformType.TEXEL_BUFFER, GpuFormat.R32_SINT).build();
 
@@ -56,6 +57,7 @@ public abstract class ShaderChunkRenderer implements ChunkRenderer {
                 .withFragmentShader(Identifier.fromNamespaceAndPath("sodium", "blocks/block_layer_opaque"))
                 .withDepthStencilState(DepthStencilState.DEFAULT)
                 .withPrimitiveTopology(PrimitiveTopology.QUADS)
+                .withPushConstantSize(DrawContext.PUSH_CONSTANT_RANGE)
                 .withVertexBinding(0, this.vertexFormat);
 
         if (pass.isTranslucent()) {

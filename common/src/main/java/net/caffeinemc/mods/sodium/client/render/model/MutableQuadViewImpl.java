@@ -213,6 +213,11 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements ListSt
         return this;
     }
 
+    public MutableQuadViewImpl setShadeDirectionOverride(@Nullable Direction direction) {
+        this.data[this.baseIndex + HEADER_BITS] = EncodingFormat.shadeDirectionOverride(this.data[this.baseIndex + HEADER_BITS], direction);
+        return this;
+    }
+
     public MutableQuadViewImpl setAmbientOcclusion(TriState ao) {
         Objects.requireNonNull(ao, "ambient occlusion TriState may not be null");
         this.data[this.baseIndex + HEADER_BITS] = EncodingFormat.ambientOcclusion(this.data[this.baseIndex + HEADER_BITS], ao);
@@ -285,7 +290,7 @@ public abstract class MutableQuadViewImpl extends QuadViewImpl implements ListSt
     public final MutableQuadViewImpl fromBakedQuad(BakedQuad quad) {
         this.fromVanillaInternal(((BakedQuadView) (Object) quad));
         this.setNominalFace(quad.direction());
-        this.setDiffuseShade(quad.materialInfo().shade());
+        this.setShadeDirectionOverride(quad.materialInfo().shadeDirectionOverride());
         this.setTintIndex(quad.materialInfo().tintIndex());
         this.setAmbientOcclusion(((BakedQuadView) (Object) quad).hasAO() ? TriState.DEFAULT : TriState.FALSE); // TODO: TRUE, or DEFAULT?
         this.setItemRenderType(quad.materialInfo().itemRenderType());

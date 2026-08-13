@@ -2,11 +2,12 @@ package net.caffeinemc.mods.sodium.mixin.core.render.world;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.sugar.Local;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.systems.RenderPass;
-import com.mojang.blaze3d.textures.FilterMode;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer;
 import net.caffeinemc.mods.sodium.client.render.chunk.ChunkRenderMatrices;
@@ -15,6 +16,7 @@ import net.caffeinemc.mods.sodium.client.util.IgnoringSectionRenderDispatcher;
 import net.caffeinemc.mods.sodium.client.util.IgnoringViewArea;
 import net.caffeinemc.mods.sodium.client.util.SodiumChunkSection;
 import net.caffeinemc.mods.sodium.client.world.LevelRendererExtension;
+import net.caffeinemc.mods.sodium.mixin.core.render.texture.TextureAtlasAccessor;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
@@ -46,13 +48,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin implements LevelRendererExtension {
-    @Unique
-    private static final EnumMap<ChunkSectionLayer,Int2ObjectOpenHashMap<List<RenderPass.Draw<GpuBufferSlice[]>>>> STATIC_MAP =
-            new EnumMap<>(ChunkSectionLayer.class);
-
     @Shadow
     @Final
     private RenderBuffers renderBuffers;
@@ -134,20 +133,58 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
      * @author IMS
      */
     @Overwrite
-    public ChunkSectionsToRender prepareChunkRenders(Matrix4fc matrix4fc) {
-        var texture = Minecraft.getInstance()
-                .getTextureManager()
-                .getTexture(TextureAtlas.LOCATION_BLOCKS)
-                .getTextureView();
-
-        return new ChunkSectionsToRender(texture, STATIC_MAP, -1, new GpuBufferSlice[0]);
+    public ChunkSectionsToRender prepareChunkRenders(Matrix4fc matrix4fc, boolean sortTranslucentSections) {
+        return this.sodium$createChunkRenderState(matrix4fc);
     }
 
-    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;prepareChunkRenders(Lorg/joml/Matrix4fc;)Lnet/minecraft/client/renderer/chunk/ChunkSectionsToRender;"))
-    private ChunkSectionsToRender getRenderState(LevelRenderer instance,
-                                                 Matrix4fc modelViewMatrix,
-                                                 Operation<ChunkSectionsToRender> original,
-                                                 @Local Vector4f fogColor) {
+    @Overwrite
+    public ChunkSectionsToRender prepareChunkRendersIndirect(Matrix4fc matrix4fc, boolean sortTranslucentSections) {
+        return this.sodium$createChunkRenderState(matrix4fc);
+    }
+
+    @Unique
+    private ChunkSectionsToRender sodium$createChunkRenderState(Matrix4fc modelViewMatrix) {
+        var atlas = Minecraft.getInstance()
+                .getTextureManager()
+                .getTexture(TextureAtlas.LOCATION_BLOCKS);
+        var atlasAccess = (TextureAtlasAccessor) atlas;
+        var terrainTransform = RenderSystem.getDynamicUniforms().writeTerrainTransform(modelViewMatrix,
+                atlasAccess.sodium$getWidth(),
+                atlasAccess.sodium$getHeight());
+
+        Map<ChunkSectionLayer, List<RenderPass.Draw<GpuBufferSlice[]>>> map = new EnumMap<>(ChunkSectionLayer.class);
+
+        for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
+            map.put(layer, List.of());
+        }
+
+        return new ChunkSectionsToRender.DrawSeparate(terrainTransform, map, 0, new GpuBufferSlice[0]);
+    }
+
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;prepareChunkRenders(Lorg/joml/Matrix4fc;Z)Lnet/minecraft/client/renderer/chunk/ChunkSectionsToRender;"))
+    private ChunkSectionsToRender sodium$wrapPrepareChunkRenders(LevelRenderer instance,
+                                                                  Matrix4fc modelViewMatrix,
+                                                                  boolean sortTranslucentSections,
+                                                                  Operation<ChunkSectionsToRender> original,
+                                                                  @Local Vector4f fogColor) {
+        return this.sodium$setRenderState(instance, modelViewMatrix, sortTranslucentSections, original, fogColor);
+    }
+
+    @WrapOperation(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;prepareChunkRendersIndirect(Lorg/joml/Matrix4fc;Z)Lnet/minecraft/client/renderer/chunk/ChunkSectionsToRender;"))
+    private ChunkSectionsToRender sodium$wrapPrepareChunkRendersIndirect(LevelRenderer instance,
+                                                                          Matrix4fc modelViewMatrix,
+                                                                          boolean sortTranslucentSections,
+                                                                          Operation<ChunkSectionsToRender> original,
+                                                                          @Local Vector4f fogColor) {
+        return this.sodium$setRenderState(instance, modelViewMatrix, sortTranslucentSections, original, fogColor);
+    }
+
+    @Unique
+    private ChunkSectionsToRender sodium$setRenderState(LevelRenderer instance,
+                                                        Matrix4fc modelViewMatrix,
+                                                        boolean sortTranslucentSections,
+                                                        Operation<ChunkSectionsToRender> original,
+                                                        Vector4f fogColor) {
 
         var projectionMatrix = ((GameRendererStorage) Minecraft.getInstance().gameRenderer)
                 .sodium$getProjectionMatrix();
@@ -155,7 +192,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
         this.matrices = new ChunkRenderMatrices(projectionMatrix, modelViewMatrix);
         var pos = this.levelRenderState.cameraRenderState.pos;
 
-        var chunkSectionsToRender = original.call(instance, modelViewMatrix);
+        var chunkSectionsToRender = original.call(instance, modelViewMatrix, sortTranslucentSections);
         ((SodiumChunkSection) (Object) chunkSectionsToRender)
                 .sodium$setRendering(this.renderer,
                         this.matrices,
@@ -167,6 +204,14 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
         // SodiumWorldRenderer still has stored from FogRendererMixin is outdated.
         this.renderer.updateFogColor(fogColor);
         return chunkSectionsToRender;
+    }
+
+    @ModifyExpressionValue(
+            method = "render",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;useImprovedTransparency()Z"))
+    private boolean sodium$useClassicTransparency(boolean improvedTransparency) {
+        // Sodium's terrain pipeline currently implements the classic alpha-blended pass, not vanilla's OIT stages.
+        return false;
     }
 
     /**
@@ -209,7 +254,7 @@ public abstract class LevelRendererMixin implements LevelRendererExtension {
             method = "lambda$addMainPass$0",
             at = @At(
                     value = "FIELD",
-                    target = "Lcom/mojang/blaze3d/textures/FilterMode;LINEAR:Lcom/mojang/blaze3d/textures/FilterMode;",
+                    target = "Lcom/mojang/renderpearl/api/textures/FilterMode;LINEAR:Lcom/mojang/renderpearl/api/textures/FilterMode;",
                     opcode = Opcodes.GETSTATIC))
     private FilterMode setFilterMode() {
         return SodiumClientMod.options().quality.pixelFilteringMode;

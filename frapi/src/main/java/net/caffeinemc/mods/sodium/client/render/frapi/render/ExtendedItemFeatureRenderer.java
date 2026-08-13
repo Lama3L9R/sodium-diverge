@@ -26,6 +26,7 @@ import net.caffeinemc.mods.sodium.mixin.frapi.ItemFeatureRendererAccessor;
 import net.fabricmc.fabric.api.client.renderer.v1.mesh.QuadEmitter;
 import net.fabricmc.fabric.api.client.renderer.v1.render.submit.ExtendedItemSubmit;
 import net.minecraft.client.renderer.feature.FeatureFrameContext;
+import net.minecraft.client.renderer.feature.ItemFeatureRenderer;
 import net.minecraft.client.renderer.feature.RenderTypeFeatureRenderer;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.rendertype.RenderType;
@@ -86,7 +87,7 @@ public class ExtendedItemFeatureRenderer extends RenderTypeFeatureRenderer<Exten
 		QuadEmitter emitter = ((ExtendedMutableQuadViewImpl) this.emitter).getWrapper();
 		emitter.clear();
 
-		List<BakedQuad> vanillaQuads = submit.quads();
+        List<BakedQuad> vanillaQuads = submit.quads().all();
 
 		//noinspection ForLoopReplaceableByForEach
 		for (int i = 0; i < vanillaQuads.size(); i++) {
@@ -154,7 +155,9 @@ public class ExtendedItemFeatureRenderer extends RenderTypeFeatureRenderer<Exten
 	}
 
 	private VertexConsumer getFoilBuffer(RenderType renderType, PoseStack.@Nullable Pose foilDecalPose) {
-		RenderType foilRenderType = ItemFeatureRendererAccessor.fabric_useTransparentGlint(renderType) ? RenderTypes.glintTranslucent() : RenderTypes.glint();
+        RenderType foilRenderType = renderType.hasBlending()
+                ? RenderTypes.itemTranslucentGlint(ItemFeatureRenderer.ENCHANTED_GLINT_ITEM)
+                : RenderTypes.itemCutoutGlint(ItemFeatureRenderer.ENCHANTED_GLINT_ITEM);
 		VertexConsumer foilBuffer = this.getVertexBuilder(foilRenderType);
 
 		if (foilDecalPose != null) {

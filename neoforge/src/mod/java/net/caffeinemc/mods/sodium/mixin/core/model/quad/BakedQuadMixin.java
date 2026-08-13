@@ -86,7 +86,7 @@ public abstract class BakedQuadMixin implements BakedQuadView {
 
     @Override
     public int getColor(int idx) {
-        return this.bakedColors.color(idx); // default is -1 for now
+        return this.bakedColors.color(idx); // default is -1.java for now
     }
 
     @Override
@@ -152,7 +152,7 @@ public abstract class BakedQuadMixin implements BakedQuadView {
 
     @Override
     public boolean hasShade() {
-        return this.materialInfo.shade();
+        return this.materialInfo.shadeDirectionOverride() != Direction.UP;
     }
 
     @Override

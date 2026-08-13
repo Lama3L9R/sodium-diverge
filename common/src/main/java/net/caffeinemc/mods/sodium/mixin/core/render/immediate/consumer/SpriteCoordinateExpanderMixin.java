@@ -1,14 +1,14 @@
 package net.caffeinemc.mods.sodium.mixin.core.render.immediate.consumer;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+import net.caffeinemc.mods.sodium.api.texture.SpriteUtil;
 import net.caffeinemc.mods.sodium.api.vertex.attributes.common.TextureAttribute;
 import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
 import net.caffeinemc.mods.sodium.client.render.vertex.VertexFormatOffsetCache;
 import net.minecraft.client.renderer.SpriteCoordinateExpander;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import org.lwjgl.system.MemoryStack;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,10 +17,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(SpriteCoordinateExpander.class)
-public class SpriteCoordinateExpanderMixin implements VertexBufferWriter {
+public abstract class SpriteCoordinateExpanderMixin implements VertexBufferWriter {
     @Shadow
-    @Final
-    private VertexConsumer delegate;
+    public abstract VertexConsumer delegate();
+
+    @Shadow
+    public abstract net.minecraft.client.renderer.texture.UvMapping mapping();
 
     @Unique
     private boolean canUseIntrinsics;
@@ -32,14 +34,16 @@ public class SpriteCoordinateExpanderMixin implements VertexBufferWriter {
     private float maxU, maxV;
 
     @Inject(method = "<init>", at = @At("RETURN"))
-    private void onInit(VertexConsumer delegate, TextureAtlasSprite sprite, CallbackInfo ci) {
-        this.minU = sprite.getU0();
-        this.minV = sprite.getV0();
+    private void onInit(VertexConsumer delegate, net.minecraft.client.renderer.texture.UvMapping mapping, CallbackInfo ci) {
+        if (mapping instanceof TextureAtlasSprite sprite) {
+            SpriteUtil.INSTANCE.markSpriteActive(sprite);
+        }
 
-        this.maxU = sprite.getU1();
-        this.maxV = sprite.getV1();
-
-        this.canUseIntrinsics = VertexBufferWriter.tryOf(this.delegate) != null;
+        this.minU = mapping.getU(0.0F);
+        this.minV = mapping.getV(0.0F);
+        this.maxU = mapping.getU(1.0F);
+        this.maxV = mapping.getV(1.0F);
+        this.canUseIntrinsics = VertexBufferWriter.tryOf(delegate) != null;
     }
 
     @Override
@@ -52,7 +56,7 @@ public class SpriteCoordinateExpanderMixin implements VertexBufferWriter {
         transform(ptr, count, format,
                 this.minU, this.minV, this.maxU, this.maxV);
 
-        VertexBufferWriter.of(this.delegate)
+        VertexBufferWriter.of(this.delegate())
                 .push(stack, ptr, count, format);
     }
 

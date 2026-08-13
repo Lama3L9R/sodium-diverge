@@ -72,7 +72,7 @@ dependencies {
         dependencies.jarJar(dependency)
     }
 
-    //addEmbeddedFabricModule("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.0.10+9afaaf8c19")
+    //addEmbeddedFabricModule("org.sinytra.forgified-fabric-api:fabric-block-view-api-v2:1.java.0.10+9afaaf8c19")
 
     jarJar(project(":neoforge", "mod"))
 }

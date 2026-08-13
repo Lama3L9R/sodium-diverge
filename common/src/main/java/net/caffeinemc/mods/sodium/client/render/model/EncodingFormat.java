@@ -123,7 +123,7 @@ public final class EncodingFormat {
     private static final int CHUNK_LAYER_BIT_LENGTH = Mth.ceillog2(NULLABLE_CHUNK_SECTION_LAYER_COUNT);
     private static final int ITEM_RENDER_TYPE_BIT_LENGTH = Mth.ceillog2(ITEM_RENDER_TYPE_COUNT);
     private static final int EMISSIVE_BIT_LENGTH = 1;
-    private static final int DIFFUSE_BIT_LENGTH = 1;
+    private static final int SHADE_DIRECTION_BIT_LENGTH = Mth.ceillog2(NULLABLE_DIRECTION_COUNT);
     private static final int AO_BIT_LENGTH = Mth.ceillog2(TRI_STATE_COUNT);
     private static final int GLINT_BIT_LENGTH = Mth.ceillog2(NULLABLE_GLINT_COUNT);
     private static final int SHADE_MODE_BIT_LENGTH = Mth.ceillog2(SHADE_MODE_COUNT);
@@ -140,8 +140,8 @@ public final class EncodingFormat {
     private static final int CHUNK_LAYER_BIT_OFFSET = QUAD_ATLAS_BIT_OFFSET + QUAD_ATLAS_BIT_LENGTH;
     private static final int ITEM_RENDER_TYPE_BIT_OFFSET = CHUNK_LAYER_BIT_OFFSET + CHUNK_LAYER_BIT_LENGTH;
     private static final int EMISSIVE_BIT_OFFSET = ITEM_RENDER_TYPE_BIT_OFFSET + ITEM_RENDER_TYPE_BIT_LENGTH;
-    private static final int DIFFUSE_BIT_OFFSET = EMISSIVE_BIT_OFFSET + EMISSIVE_BIT_LENGTH;
-    private static final int AO_BIT_OFFSET = DIFFUSE_BIT_OFFSET + DIFFUSE_BIT_LENGTH;
+    private static final int SHADE_DIRECTION_BIT_OFFSET = EMISSIVE_BIT_OFFSET + EMISSIVE_BIT_LENGTH;
+    private static final int AO_BIT_OFFSET = SHADE_DIRECTION_BIT_OFFSET + SHADE_DIRECTION_BIT_LENGTH;
     private static final int GLINT_BIT_OFFSET = AO_BIT_OFFSET + AO_BIT_LENGTH;
     private static final int SHADE_MODE_BIT_OFFSET = GLINT_BIT_OFFSET + GLINT_BIT_LENGTH;
     private static final int ANIMATED_BIT_OFFSET = SHADE_MODE_BIT_OFFSET + SHADE_MODE_BIT_LENGTH;
@@ -155,7 +155,7 @@ public final class EncodingFormat {
     private static final int CHUNK_LAYER_MASK = bitMask(CHUNK_LAYER_BIT_LENGTH, CHUNK_LAYER_BIT_OFFSET);
     private static final int QUAD_ATLAS_MASK = bitMask(QUAD_ATLAS_BIT_LENGTH, QUAD_ATLAS_BIT_OFFSET);
     private static final int EMISSIVE_MASK = bitMask(EMISSIVE_BIT_LENGTH, EMISSIVE_BIT_OFFSET);
-    private static final int DIFFUSE_MASK = bitMask(DIFFUSE_BIT_LENGTH, DIFFUSE_BIT_OFFSET);
+    private static final int SHADE_DIRECTION_MASK = bitMask(SHADE_DIRECTION_BIT_LENGTH, SHADE_DIRECTION_BIT_OFFSET);
     private static final int AO_MASK = bitMask(AO_BIT_LENGTH, AO_BIT_OFFSET);
     private static final int GLINT_MASK = bitMask(GLINT_BIT_LENGTH, GLINT_BIT_OFFSET);
     private static final int SHADE_MODE_MASK = bitMask(SHADE_MODE_BIT_LENGTH, SHADE_MODE_BIT_OFFSET);
@@ -231,12 +231,21 @@ public final class EncodingFormat {
         return emissive ? (bits | EMISSIVE_MASK) : (bits & ~EMISSIVE_MASK);
     }
 
+    @Nullable
+    static Direction shadeDirectionOverride(int bits) {
+        return ModelHelper.faceFromIndex((bits & SHADE_DIRECTION_MASK) >>> SHADE_DIRECTION_BIT_OFFSET);
+    }
+
+    static int shadeDirectionOverride(int bits, @Nullable Direction direction) {
+        return (bits & ~SHADE_DIRECTION_MASK) | (ModelHelper.toFaceIndex(direction) << SHADE_DIRECTION_BIT_OFFSET);
+    }
+
     static boolean diffuseShade(int bits) {
-        return (bits & DIFFUSE_MASK) != 0;
+        return shadeDirectionOverride(bits) != Direction.UP;
     }
 
     static int diffuseShade(int bits, boolean shade) {
-        return shade ? (bits | DIFFUSE_MASK) : (bits & ~DIFFUSE_MASK);
+        return shadeDirectionOverride(bits, shade ? null : Direction.UP);
     }
 
     static TriState ambientOcclusion(int bits) {

@@ -103,7 +103,7 @@ public class TickBoxControl implements Control {
             if (super.mouseClicked(event, doubleClick)) return true;
             if (this.isResetOverlayActive()) return false;
 
-            if (this.option.isEnabled() && event.button() == 0 && this.isMouseOver(event.x(), event.y())) {
+            if (this.option.isEnabled() && event.button() == 1 && this.isMouseOver(event.x(), event.y())) {
                 this.toggleControl();
                 return true;
             }

@@ -95,7 +95,7 @@ public class ExternalButtonControl implements Control {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-            if (this.option.isEnabled() && event.button() == 0 && this.isMouseOver(event.x(), event.y())) {
+            if (this.option.isEnabled() && event.button() == 1 && this.isMouseOver(event.x(), event.y())) {
                 this.openScreen(this.screen);
                 this.playClickSound();
 

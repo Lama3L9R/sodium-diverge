@@ -5,6 +5,7 @@ import net.caffeinemc.mods.sodium.api.util.ColorU8;
 import net.caffeinemc.mods.sodium.client.console.Console;
 import net.caffeinemc.mods.sodium.client.console.message.Message;
 import net.caffeinemc.mods.sodium.client.console.message.MessageLevel;
+import net.caffeinemc.mods.sodium.client.util.PreciseTime;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -15,7 +16,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -51,7 +51,7 @@ public class ConsoleRenderer {
     }
 
     public void draw(GuiGraphicsExtractor context) {
-        var currentTime = GLFW.glfwGetTime();
+        var currentTime = PreciseTime.getTime();
 
         Minecraft minecraft = Minecraft.getInstance();
 

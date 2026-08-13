@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.mixin.core;
 
-import com.mojang.blaze3d.opengl.GlBackend;
+import com.mojang.renderpearl.backend.opengl.GlBackend;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.compatibility.workarounds.Workarounds;
 import net.caffeinemc.mods.sodium.client.services.PlatformRuntimeInformation;
-import org.lwjgl.glfw.GLFW;
+import org.lwjgl.sdl.SDLVideo;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,7 +17,8 @@ public abstract class WindowMixin {
         if (!PlatformRuntimeInformation.getInstance().platformHasEarlyLoadingScreen()) {
             if (SodiumClientMod.options().performance.useNoErrorGLContext) {
                 if (!Workarounds.isWorkaroundEnabled(Workarounds.Reference.NO_ERROR_CONTEXT_UNSUPPORTED)) {
-                    GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_NO_ERROR, GLFW.GLFW_TRUE);
+                    SDLVideo.SDL_GL_SetAttribute(SDLVideo.SDL_GL_CONTEXT_NO_ERROR, 1);
+
                 }
             }
         }

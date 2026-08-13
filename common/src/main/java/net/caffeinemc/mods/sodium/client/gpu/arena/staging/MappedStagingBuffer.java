@@ -1,10 +1,10 @@
 package net.caffeinemc.mods.sodium.client.gpu.arena.staging;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.buffers.GpuFence;
-import com.mojang.blaze3d.opengl.GlBuffer;
-import com.mojang.blaze3d.opengl.GlDevice;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.GpuFence;
+import com.mojang.renderpearl.backend.opengl.GlBuffer;
+import com.mojang.renderpearl.backend.opengl.GlDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;

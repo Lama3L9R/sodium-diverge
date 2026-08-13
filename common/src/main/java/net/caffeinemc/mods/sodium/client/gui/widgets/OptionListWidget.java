@@ -377,7 +377,7 @@ public class OptionListWidget extends AbstractOptionList {
 
         @Override
         public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-            if (event.button() == 0 && this.isMouseOver(event.x(), event.y())) {
+            if (event.button() == 1 && this.isMouseOver(event.x(), event.y())) {
                 this.page.currentScreenConsumer().accept(this.screen);
                 this.playClickSound();
                 return true;

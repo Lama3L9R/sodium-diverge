@@ -1,38 +1,34 @@
 package net.caffeinemc.mods.sodium.mixin.features.gui.hooks.debug;
 
-import com.llamalad7.mixinextras.sugar.Local;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.util.FrameTimeStatistics;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
 
 @Mixin(DebugScreenOverlay.class)
 public class DebugScreenOverlayInsertMixin {
-    @Inject(
+    @ModifyArg(
             method = "extractRenderState",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/components/DebugScreenOverlay;extractLines(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Ljava/util/List;Z)V",
-                    ordinal = 0)
+                    target = "Lnet/minecraft/client/gui/components/DebugScreenOverlay;extractLines(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Ljava/util/List;ZI)V",
+                    ordinal = 0),
+            index = 1
     )
-    private void sodium$insertFpsPercentiles(GuiGraphicsExtractor graphics,
-                                             CallbackInfo ci,
-                                             @Local(ordinal = 0) List<String> leftLines) {
+    private List<String> sodium$insertFpsPercentiles(List<String> leftLines) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!minecraft.debugEntries.isCurrentlyEnabled(SodiumClientMod.SODIUM_FPS_PERCENTILES)) {
-            return;
+            return leftLines;
         }
         var results = FrameTimeStatistics.INSTANCE.get();
         if (results == null || results.isEmpty()) {
-            return;
+            return leftLines;
         }
 
         // splice the percentile fps display into the debug lines to make sure it's right under the fps string.
@@ -61,6 +57,7 @@ public class DebugScreenOverlayInsertMixin {
         sb.append(ChatFormatting.GRAY).append(" fps");
 
         leftLines.add(insertAt, sb.toString());
+        return leftLines;
     }
 
     @Unique

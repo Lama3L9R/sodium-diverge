@@ -1,12 +1,13 @@
 package net.caffeinemc.mods.sodium.client.render.chunk;
 
-import com.mojang.blaze3d.IndexType;
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.renderpearl.api.pipeline.IndexType;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
-import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import net.caffeinemc.mods.sodium.client.SodiumClientMod;
 import net.caffeinemc.mods.sodium.client.gpu.device.batch.MultiDrawBatch;
 import net.caffeinemc.mods.sodium.client.gpu.device.context.DrawContext;
@@ -25,8 +26,6 @@ import net.caffeinemc.mods.sodium.client.util.UInt32;
 import net.minecraft.client.Minecraft;
 
 import java.util.Iterator;
-import java.util.Optional;
-import java.util.OptionalDouble;
 
 public class DefaultChunkRenderer extends ShaderChunkRenderer {
     private final SharedQuadIndexBuffer sharedIndexBuffer;
@@ -46,24 +45,28 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
     @Override
     public void render(ChunkRenderMatrices matrices,
                        ChunkRenderListIterable renderLists,
-                       TerrainRenderPass renderPass,
+                       TerrainRenderPass terrainPass,
                        CameraTransform camera,
                        FogParameters parameters,
                        boolean indexedRenderingEnabled,
-                       GpuSampler terrainSampler, GpuBufferSlice uniformData, GpuBuffer sectionTimeInfo) {
-        super.begin(renderPass, parameters, terrainSampler);
+                       RenderPass renderPass,
+                       GpuSampler terrainSampler,
+                       GpuTextureView atlas,
+                       GpuBufferSlice uniformData,
+                       GpuBuffer sectionTimeInfo) {
+        super.begin(terrainPass, parameters, terrainSampler);
 
         final boolean useBlockFaceCulling = SodiumClientMod.options().performance.useBlockFaceCulling;
-        final boolean useIndexedTessellation = renderPass.isTranslucent() && indexedRenderingEnabled;
+        final boolean useIndexedTessellation = terrainPass.isTranslucent() && indexedRenderingEnabled;
 
-        Iterator<ChunkRenderList> iterator = renderLists.iterator(renderPass.isTranslucent());
+        Iterator<ChunkRenderList> iterator = renderLists.iterator(terrainPass.isTranslucent());
         boolean hasDrawBatches = false;
 
         while (iterator.hasNext()) {
             ChunkRenderList renderList = iterator.next();
 
             var region = renderList.getRegion();
-            var storage = region.getStorage(renderPass);
+            var storage = region.getStorage(terrainPass);
 
             if (storage == null) {
                 continue;
@@ -71,13 +74,13 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
             var resources = region.getResources();
             if (resources == null) {
-                region.clearCachedBatchFor(renderPass);
+                region.clearCachedBatchFor(terrainPass);
                 continue;
             }
 
-            var batch = region.getCachedBatch(renderPass);
+            var batch = region.getCachedBatch(terrainPass);
             if (!batch.isFilled) {
-                fillCommandBuffer(batch, region, storage, renderList, camera, renderPass, useBlockFaceCulling, useIndexedTessellation);
+                fillCommandBuffer(batch, region, storage, renderList, camera, terrainPass, useBlockFaceCulling, useIndexedTessellation);
             }
 
             if (batch.isEmpty()) {
@@ -96,65 +99,58 @@ public class DefaultChunkRenderer extends ShaderChunkRenderer {
 
         // Avoid binding Sodium's shader when no vanilla draw call will run to refresh the GL program cache.
         if (!hasDrawBatches) {
-            super.end(renderPass);
+            super.end(terrainPass);
             return;
         }
 
-        iterator = renderLists.iterator(renderPass.isTranslucent());
+        iterator = renderLists.iterator(terrainPass.isTranslucent());
 
-        var encoder = RenderSystem.getDevice().createCommandEncoder();
+        renderPass.setPipeline(RenderSystem.getCompiledPipeline(this.activeProgram));
+        this.drawContext.setContext(renderPass, this.activeProgram);
 
-        try (RenderPass pass = encoder.createRenderPass(() -> "Terrain",
-                renderPass.getTarget().getColorTextureView(), Optional.empty(),
-                renderPass.getTarget().getDepthTextureView(), OptionalDouble.empty())) {
-            pass.setPipeline(this.activeProgram);
-            this.drawContext.setContext(pass, this.activeProgram);
+        if (!useIndexedTessellation && this.sharedIndexBuffer.getBufferObject() != null) {
+            renderPass.setIndexBuffer(this.sharedIndexBuffer.getBufferObject(), IndexType.INT);
+        }
 
-            if (!useIndexedTessellation && this.sharedIndexBuffer.getBufferObject() != null) {
-                pass.setIndexBuffer(this.sharedIndexBuffer.getBufferObject(), IndexType.INT);
+        renderPass.setUniform("u_Globals", uniformData);
+        renderPass.setUniform("u_SectionTimeInfo", sectionTimeInfo);
+        renderPass.setUniform("u_LightTex", Minecraft.getInstance().gameRenderer.lightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
+        renderPass.setUniform("u_BlockTex", atlas, terrainSampler);
+
+        while (iterator.hasNext()) {
+            ChunkRenderList renderList = iterator.next();
+
+            var region = renderList.getRegion();
+            var storage = region.getStorage(terrainPass);
+
+            if (storage == null) {
+                continue;
             }
 
-            pass.setUniform("u_Globals", uniformData);
-            pass.setUniform("u_SectionTimeInfo", sectionTimeInfo);
-            pass.bindTexture("u_LightTex", Minecraft.getInstance().gameRenderer.lightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR));
-            pass.bindTexture("u_BlockTex", renderPass.getAtlas(), terrainSampler);
-
-            while (iterator.hasNext()) {
-                ChunkRenderList renderList = iterator.next();
-
-                var region = renderList.getRegion();
-                var storage = region.getStorage(renderPass);
-
-                if (storage == null) {
-                    continue;
-                }
-
-                var resources = region.getResources();
-                if (resources == null) {
-                    continue;
-                }
-
-                var batch = region.getCachedBatch(renderPass);
-                if (batch.isEmpty()) {
-                    continue;
-                }
-
-
-                if (useIndexedTessellation) {
-                    pass.setIndexBuffer(resources.getIndexBuffer(), IndexType.INT);
-                }
-
-                pass.setVertexBuffer(0, resources.getGeometryBuffer().slice());
-
-                this.drawContext.updateData(region, camera);
-
-                batch.draw(this.drawContext);
+            var resources = region.getResources();
+            if (resources == null) {
+                continue;
             }
+
+            var batch = region.getCachedBatch(terrainPass);
+            if (batch.isEmpty()) {
+                continue;
+            }
+
+            if (useIndexedTessellation) {
+                renderPass.setIndexBuffer(resources.getIndexBuffer(), IndexType.INT);
+            }
+
+            renderPass.setVertexBuffer(0, resources.getGeometryBuffer().slice());
+
+            this.drawContext.updateData(region, camera);
+
+            batch.draw(this.drawContext);
         }
 
         this.drawContext.endDraw();
 
-        super.end(renderPass);
+        super.end(terrainPass);
     }
 
     @Override

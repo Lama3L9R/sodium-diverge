@@ -115,6 +115,11 @@ public class QuadViewImpl implements ModelQuadView {
         return EncodingFormat.diffuseShade(this.data[this.baseIndex + HEADER_BITS]);
     }
 
+    @Nullable
+    public Direction getShadeDirectionOverride() {
+        return EncodingFormat.shadeDirectionOverride(this.data[this.baseIndex + HEADER_BITS]);
+    }
+
     public TriState ambientOcclusion() {
         return EncodingFormat.ambientOcclusion(this.data[this.baseIndex + HEADER_BITS]);
     }

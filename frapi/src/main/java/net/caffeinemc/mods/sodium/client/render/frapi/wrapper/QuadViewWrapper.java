@@ -142,8 +142,8 @@ public class QuadViewWrapper implements QuadView {
     }
 
     @Override
-    public boolean diffuseShade() {
-        return this.quad.diffuseShade();
+    public @Nullable Direction shadeDirectionOverride() {
+        return this.quad.getShadeDirectionOverride();
     }
 
     @Override

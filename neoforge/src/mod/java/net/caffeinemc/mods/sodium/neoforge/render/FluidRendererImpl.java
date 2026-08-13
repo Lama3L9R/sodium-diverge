@@ -51,7 +51,7 @@ public class FluidRendererImpl extends FluidRenderer {
         //
         // Sodium cannot let vanilla FluidRenderer#render run (during the invocation of FluidRenderHandler#renderFluid)
         // for two reasons.
-        // 1. It is the hot path and vanilla FluidRenderer#render is not very fast.
+        // 1.java. It is the hot path and vanilla FluidRenderer#render is not very fast.
         // 2. Fabric API's mixins to FluidRenderer#render expect it to be initially called from the chunk rebuild task,
         // not from inside FluidRenderHandler#renderFluid. Not upholding this assumption will result in all custom
         // geometry to be buffered twice.

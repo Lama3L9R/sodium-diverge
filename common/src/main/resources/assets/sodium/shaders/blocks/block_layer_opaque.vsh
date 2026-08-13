@@ -1,30 +1,25 @@
-#version 330 core
+#version 450 core
 
-#moj_import <sodium:globals.glsl>
-#moj_import <sodium:fog.glsl>
-#moj_import <sodium:chunk_vertex.glsl>
+#include <sodium:globals.glsl>
+#include <sodium:fog.glsl>
+#include <sodium:chunk_vertex.glsl>
 
-out vec4 v_Color;
-out vec2 v_TexCoord;
+layout(location = 0) out vec4 v_Color;
+layout(location = 1) out vec2 v_TexCoord;
 
 #ifdef USE_FOG
-out vec2 v_FragDistance;
-out float fadeFactor;
+layout(location = 2) out vec2 v_FragDistance;
+layout(location = 3) out float fadeFactor;
 #endif
 
 uniform isamplerBuffer u_SectionTimeInfo;
 
-#ifdef VULKAN
 layout(push_constant) uniform PC {
     vec3 u_RegionOffset;
+    float _padding0;
     int u_CurrentTime;
     uint u_RegionID;
 };
-#else
-uniform vec3 u_RegionOffset;
-uniform int u_CurrentTime;
-uniform uint u_RegionID;
-#endif
 
 uniform sampler2D u_LightTex; // The light map texture sampler
 

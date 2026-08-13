@@ -108,8 +108,8 @@ public class MutableQuadViewWrapper extends QuadViewWrapper implements QuadEmitt
     }
 
     @Override
-    public QuadEmitter diffuseShade(boolean shade) {
-        this.mutableQuad.setDiffuseShade(shade);
+    public QuadEmitter shadeDirectionOverride(@Nullable Direction direction) {
+        this.mutableQuad.setShadeDirectionOverride(direction);
         return this;
     }
 

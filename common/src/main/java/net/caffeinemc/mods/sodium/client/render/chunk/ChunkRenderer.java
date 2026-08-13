@@ -1,8 +1,10 @@
 package net.caffeinemc.mods.sodium.client.render.chunk;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.textures.GpuSampler;
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.commands.RenderPass;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import net.caffeinemc.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
 import net.caffeinemc.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import net.caffeinemc.mods.sodium.client.render.viewport.CameraTransform;
@@ -22,11 +24,13 @@ public interface ChunkRenderer {
      * @param camera                  The camera context containing chunk offsets for the current render
      * @param parameters              The current fog state
      * @param indexedRenderingEnabled Whether indexed rendering is enabled
+     * @param renderPass              The active vanilla render pass
      * @param terrainSampler          The sampler to use for the atlas
+     * @param atlas                   The block atlas view bound by vanilla
      * @param uniformData             The buffer slice containing the uniform data for this frame
      * @param sectionTimeInfo         The storage buffer containing fade timings
      */
-    void render(ChunkRenderMatrices matrices, ChunkRenderListIterable renderLists, TerrainRenderPass pass, CameraTransform camera, FogParameters parameters, boolean indexedRenderingEnabled, GpuSampler terrainSampler, GpuBufferSlice uniformData, GpuBuffer sectionTimeInfo);
+    void render(ChunkRenderMatrices matrices, ChunkRenderListIterable renderLists, TerrainRenderPass pass, CameraTransform camera, FogParameters parameters, boolean indexedRenderingEnabled, RenderPass renderPass, GpuSampler terrainSampler, GpuTextureView atlas, GpuBufferSlice uniformData, GpuBuffer sectionTimeInfo);
 
     /**
      * Rotates the data for a new frame.

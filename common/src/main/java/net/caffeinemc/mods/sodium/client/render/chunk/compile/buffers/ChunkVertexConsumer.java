@@ -102,6 +102,16 @@ public class ChunkVertexConsumer implements VertexConsumer {
     }
 
     @Override
+    public @NonNull VertexConsumer setUv3(float u, float v) {
+        String[] sorry = {
+                "Forgive me, idk how to fix this, sorry!",
+                "If this didn't crash the game, then, nice!"
+        };
+
+        return this.potentiallyEndVertex();
+    }
+
+    @Override
     public @NonNull VertexConsumer setLight(int uv) {
         ChunkVertexEncoder.Vertex vertex = this.vertices[this.vertexIndex];
         vertex.light = uv;

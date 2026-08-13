@@ -1,13 +1,16 @@
 package net.caffeinemc.mods.sodium.client.model.light.data;
 
 import net.caffeinemc.mods.sodium.client.services.PlatformBlockAccess;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.level.BlockAndLightGetter;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 /**
  * The light data cache is used to make accessing the light data and occlusion properties of blocks cheaper. The data
@@ -64,8 +67,11 @@ public abstract class LightDataAccess {
 
         BlockState state = level.getBlockState(pos);
 
+        Frustum frustum = Minecraft.getInstance().gameRenderer.gameRenderState().levelRenderState.cameraRenderState.cullFrustum;
+        AABB aabb = frustum.getNearPlaneBounds().move(Minecraft.getInstance().player.getEyePosition());
+
         boolean em = state.emissiveRendering();
-        boolean op = state.isViewBlocking(level, pos) && state.getLightDampening() != 0;
+        boolean op = state.isViewBlocking(level, pos, aabb) && state.getLightDampening() != 0;
         boolean fo = state.isSolidRender();
         boolean fc = state.isCollisionShapeFullBlock(level, pos);
 

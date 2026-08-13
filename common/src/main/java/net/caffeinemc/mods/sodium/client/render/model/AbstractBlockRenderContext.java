@@ -198,7 +198,21 @@ public abstract class AbstractBlockRenderContext extends AbstractRenderContext {
     protected void shadeQuad(MutableQuadViewImpl quad, LightMode lightMode, boolean emissive, SodiumShadeMode shadeMode) {
         LightPipeline lighter = this.lighters.getLighter(lightMode);
         QuadLightData data = this.quadLightData;
-        lighter.calculate(quad, this.pos, data, quad.getCullFace(), quad.getLightFace(), quad.hasShade(), shadeMode == SodiumShadeMode.ENHANCED);
+        Direction lightFace = quad.getLightFace();
+        boolean shade = quad.hasShade();
+        lighter.calculate(quad, this.pos, data, quad.getCullFace(), lightFace, shade, shadeMode == SodiumShadeMode.ENHANCED);
+
+        // Minecraft applies a material shade-direction override after calculating AO and lightmaps.
+        Direction shadeDirection = quad.getShadeDirectionOverride();
+        if (shadeDirection != null) {
+            float baseBrightness = shade ? this.level.cardinalLighting().byFace(lightFace) : this.level.cardinalLighting().up();
+            float brightness = this.level.cardinalLighting().byFace(shadeDirection);
+            float scale = brightness / baseBrightness;
+
+            for (int i = 0; i < 4; i++) {
+                data.br[i] *= scale;
+            }
+        }
 
         if (emissive) {
             for (int i = 0; i < 4; i++) {
